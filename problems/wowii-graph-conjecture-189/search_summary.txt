@@ -253,7 +253,111 @@ geng189: 5 graphs generated in 27594.27 sec (sum over the runs)
 hyp189: total=5 connected=5 hyp=0 hyp_bic=0 hyp_n>=2s+4=0 hyp_diam>=3=0 hyp_all4=0 CE=0 UNK=0 near_nontraceable=0
 ind189: total=5 connected=5 hyp=0 nontraceable=0
 
-## Pruned search with SMAX=4 (keeps every hypothesis graph with sigma(G) <= 4): SMAX=4 geng189 -c n
+## Pruned search for sigma(G) <= 4: SMAX=4 geng189 <flags> n | hyp189, the same graphs through ind189
+### n=2 (flags -c)
+geng189: 1 graphs generated in 0.00 sec
+hyp189: total=1 connected=1 hyp=1 hyp_bic=0 hyp_n>=2s+4=0 hyp_diam>=3=0 hyp_all4=0 CE=0 UNK=0 near_nontraceable=0
+hyp189: hyp n=2: 1
+hyp189: hyp sigma=1: 1 (bic&diam>=3: 0)
+ind189: total=1 connected=1 hyp=1 nontraceable=0
+ind189: sigma=1 hyp=1
+ind189: n=2 hyp=1
+### n=3 (flags -c)
+geng189: 2 graphs generated in 0.00 sec
+hyp189: total=2 connected=2 hyp=2 hyp_bic=1 hyp_n>=2s+4=0 hyp_diam>=3=0 hyp_all4=0 CE=0 UNK=0 near_nontraceable=0
+hyp189: hyp n=3: 2
+hyp189: hyp sigma=1: 1 (bic&diam>=3: 0)
+hyp189: hyp sigma=2: 1 (bic&diam>=3: 0)
+ind189: total=2 connected=2 hyp=2 nontraceable=0
+ind189: sigma=1 hyp=1
+ind189: sigma=2 hyp=1
+ind189: n=3 hyp=2
+### n=4 (flags -c)
+geng189: 6 graphs generated in 0.00 sec
+hyp189: total=6 connected=6 hyp=5 hyp_bic=3 hyp_n>=2s+4=0 hyp_diam>=3=1 hyp_all4=0 CE=0 UNK=0 near_nontraceable=0
+hyp189: hyp n=4: 5
+hyp189: hyp sigma=1: 1 (bic&diam>=3: 0)
+hyp189: hyp sigma=2: 3 (bic&diam>=3: 0)
+hyp189: hyp sigma=3: 1 (bic&diam>=3: 0)
+ind189: total=6 connected=6 hyp=5 nontraceable=0
+ind189: sigma=1 hyp=1
+ind189: sigma=2 hyp=3
+ind189: sigma=3 hyp=1
+ind189: n=4 hyp=5
+### n=5 (flags -c)
+geng189: 21 graphs generated in 0.00 sec
+hyp189: total=21 connected=21 hyp=15 hyp_bic=10 hyp_n>=2s+4=0 hyp_diam>=3=3 hyp_all4=0 CE=0 UNK=0 near_nontraceable=0
+hyp189: hyp n=5: 15
+hyp189: hyp sigma=2: 9 (bic&diam>=3: 0)
+hyp189: hyp sigma=3: 5 (bic&diam>=3: 0)
+hyp189: hyp sigma=4: 1 (bic&diam>=3: 0)
+ind189: total=21 connected=21 hyp=15 nontraceable=0
+ind189: sigma=2 hyp=9
+ind189: sigma=3 hyp=5
+ind189: sigma=4 hyp=1
+ind189: n=5 hyp=15
+### n=6 (flags -c)
+geng189: 111 graphs generated in 0.00 sec
+hyp189: total=111 connected=111 hyp=50 hyp_bic=37 hyp_n>=2s+4=0 hyp_diam>=3=19 hyp_all4=0 CE=0 UNK=0 near_nontraceable=0
+hyp189: hyp n=6: 50
+hyp189: hyp sigma=2: 15 (bic&diam>=3: 7)
+hyp189: hyp sigma=3: 27 (bic&diam>=3: 0)
+hyp189: hyp sigma=4: 8 (bic&diam>=3: 0)
+ind189: total=111 connected=111 hyp=50 nontraceable=0
+ind189: sigma=2 hyp=15
+ind189: sigma=3 hyp=27
+ind189: sigma=4 hyp=8
+ind189: n=6 hyp=50
+### n=7 (flags -c)
+geng189: 808 graphs generated in 0.00 sec
+hyp189: total=808 connected=808 hyp=235 hyp_bic=197 hyp_n>=2s+4=0 hyp_diam>=3=78 hyp_all4=0 CE=0 UNK=0 near_nontraceable=0
+hyp189: hyp n=7: 235
+hyp189: hyp sigma=2: 5 (bic&diam>=3: 2)
+hyp189: hyp sigma=3: 163 (bic&diam>=3: 39)
+hyp189: hyp sigma=4: 67 (bic&diam>=3: 0)
+ind189: total=808 connected=808 hyp=235 nontraceable=0
+ind189: sigma=2 hyp=5
+ind189: sigma=3 hyp=163
+ind189: sigma=4 hyp=67
+ind189: n=7 hyp=235
+### n=8 (flags -c)
+geng189: 7623 graphs generated in 0.00 sec
+hyp189: total=7623 connected=7623 hyp=1311 hyp_bic=1154 hyp_n>=2s+4=0 hyp_diam>=3=440 hyp_all4=0 CE=0 UNK=0 near_nontraceable=0
+hyp189: hyp n=8: 1311
+hyp189: hyp sigma=3: 293 (bic&diam>=3: 194)
+hyp189: hyp sigma=4: 1018 (bic&diam>=3: 89)
+ind189: total=7623 connected=7623 hyp=1311 nontraceable=0
+ind189: sigma=3 hyp=293
+ind189: sigma=4 hyp=1018
+ind189: n=8 hyp=1311
+### n=9 (flags -c)
+geng189: 54274 graphs generated in 0.05 sec
+hyp189: total=54274 connected=54274 hyp=17112 hyp_bic=15764 hyp_n>=2s+4=0 hyp_diam>=3=5319 hyp_all4=0 CE=0 UNK=0 near_nontraceable=0
+hyp189: hyp n=9: 17112
+hyp189: hyp sigma=3: 100 (bic&diam>=3: 85)
+hyp189: hyp sigma=4: 17012 (bic&diam>=3: 3887)
+ind189: total=54274 connected=54274 hyp=17112 nontraceable=0
+ind189: sigma=3 hyp=100
+ind189: sigma=4 hyp=17012
+ind189: n=9 hyp=17112
+### n=10 (flags -c)
+geng189: 133566 graphs generated in 0.69 sec
+hyp189: total=133566 connected=133566 hyp=33462 hyp_bic=21301 hyp_n>=2s+4=29 hyp_diam>=3=33462 hyp_all4=24 CE=0 UNK=0 near_nontraceable=0
+hyp189: hyp n=10: 33462
+hyp189: hyp sigma=3: 29 (bic&diam>=3: 24)
+hyp189: hyp sigma=4: 33433 (bic&diam>=3: 21277)
+ind189: total=133566 connected=133566 hyp=33462 nontraceable=0
+ind189: sigma=3 hyp=29
+ind189: sigma=4 hyp=33433
+ind189: n=10 hyp=33462
+### n=11 (flags -c)
+geng189: 136772 graphs generated in 6.09 sec
+hyp189: total=136772 connected=136772 hyp=7186 hyp_bic=7139 hyp_n>=2s+4=0 hyp_diam>=3=7186 hyp_all4=0 CE=0 UNK=0 near_nontraceable=0
+hyp189: hyp n=11: 7186
+hyp189: hyp sigma=4: 7186 (bic&diam>=3: 7139)
+ind189: total=136772 connected=136772 hyp=7186 nontraceable=0
+ind189: sigma=4 hyp=7186
+ind189: n=11 hyp=7186
 ### n=12 (flags -c)
 geng189: 166081 graphs generated in 53.43 sec
 hyp189: total=166081 connected=166081 hyp=2044 hyp_bic=1973 hyp_n>=2s+4=2044 hyp_diam>=3=2044 hyp_all4=1973 CE=0 UNK=0 near_nontraceable=0
@@ -270,3 +374,11 @@ hyp189: hyp sigma=4: 285 (bic&diam>=3: 270)
 ind189: total=341208 connected=341208 hyp=285 nontraceable=0
 ind189: sigma=4 hyp=285
 ind189: n=13 hyp=285
+### n=14 (flags -c, 128 res/mod runs, 4 at a time, 23.4 min wall-clock)
+geng189: 1001800 graphs output
+hyp189: total=1001800 connected=1001800 hyp=0 hyp_bic=0 hyp_n>=2s+4=0 hyp_diam>=3=0 hyp_all4=0 CE=0 UNK=0 near_nontraceable=0
+ind189: total=1001800 connected=1001800 hyp=0 nontraceable=0
+### n=15 (flags -c -d4, 128 res/mod runs, 4 at a time, 25.0 min wall-clock)
+geng189: 23 graphs output
+hyp189: total=23 connected=23 hyp=0 hyp_bic=0 hyp_n>=2s+4=0 hyp_diam>=3=0 hyp_all4=0 CE=0 UNK=0 near_nontraceable=0
+ind189: total=23 connected=23 hyp=0 nontraceable=0

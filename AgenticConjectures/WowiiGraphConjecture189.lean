@@ -36,6 +36,15 @@ The conjecture itself is not proved here.  Under its hypothesis (H):
   `n - 13`, every vertex has at most three vertices at distance two, and at least two vertices
   have degree at most three.  These facts make the case `σ(G) ≤ 3` a finite search, which is
   carried out (outside Lean) by the scripts in `problems/wowii-graph-conjecture-189/`.
+* `exists_card_add_mul_self_le`, `four_mul_card_le` and `four_mul_card_le_sq`: for every vertex
+  `x` some `s` satisfies `n + s² ≤ distEven x + deg x + s (σ(G) + 1)`, where `s` is the size of
+  a minimum transversal of sets of neighbours of `x` that lie on geodesics towards the vertices
+  at odd distance at least three.  Hence `4n ≤ 4 (σ + 1) + 4 deg x + (σ + 1)²` and
+  `n ≤ 2σ + 1 + ⌊(σ + 1)² / 4⌋`.
+* `search_reduction_four`: if `σ(G) ≤ 4`, then `n ≤ 15`, every vertex has degree at least
+  `n - 11`, every vertex has at most four vertices at distance two, and at least two vertices
+  have degree at most four.  This makes the case `σ(G) ≤ 4` a finite search, carried out by the
+  same scripts.
 -/
 
 namespace AgenticConjectures.WowiiGraphConjecture189
@@ -538,6 +547,317 @@ theorem search_reduction [Nontrivial α] (G : SimpleGraph α) [DecidableRel G.Ad
     have h4 : (secondSmallestDegree G + 1) ^ 2 ≤ 4 ^ 2 := Nat.pow_le_pow_left (by omega) 2
     omega
   · have h := card_le_degree_add G hconn hσ x
+    omega
+  · exact (two_le_card_degree_le G).trans
+      (card_le_card fun w hw => by
+        simp only [mem_filter, mem_univ, true_and] at hw ⊢; omega)
+
+/-- **Transversal bound.**  Under the hypothesis of Conjecture 189, for every vertex `x` of a
+connected graph there is an `s` with `n + s² ≤ distEven x + deg x + s (σ(G) + 1)`.
+
+Let `O` be the set of vertices at odd distance at least three from `x`, give each `z ∈ O` a
+neighbour `q z` one step closer to `x`, and let `Dn p` be the set of neighbours of `x` one step
+closer to `p` than `x` is.  Every `y ∈ Dn (q z)` is at even distance `dist x z - 1` from `z`.
+Take `Y` of minimum size `s` meeting every `Dn (q z)`.  Each `y ∈ Y` has a private `z`, with
+`y` the only element of `Y` in `Dn (q z)`.  For `y' ∈ Y`, every other `y ∈ Y` gives a vertex at
+even distance from `y'` outside `O`: `y` itself if `y` and `y'` are not adjacent, and the
+private parent `q z` of `y` if they are.  So `y'` has at most `σ + 1 - s` vertices of `O` at
+even distance, and these sets cover `O`. -/
+theorem exists_card_add_mul_self_le [Nontrivial α] (G : SimpleGraph α) [DecidableRel G.Adj]
+    (hconn : G.Connected)
+    (hσ : (Finset.univ.image (distEven G)).max' (by simp) ≤ 1 + secondSmallestDegree G)
+    (x : α) :
+    ∃ s, Fintype.card α + s * s ≤
+      distEven G x + G.degree x + s * (secondSmallestDegree G + 1) := by
+  classical
+  set σ := secondSmallestDegree G with hσdef
+  have hDle : ∀ v, distEven G v ≤ σ + 1 := fun v =>
+    (le_max' _ _ (mem_image_of_mem _ (mem_univ v))).trans (by omega)
+  -- a parent `q w` of every vertex `w ≠ x`
+  have hpar : ∀ w : α, ∃ p, w ≠ x → G.Adj w p ∧ G.dist x p + 1 = G.dist x w := by
+    intro w
+    by_cases hw : w = x
+    · exact ⟨w, fun h => absurd hw h⟩
+    · obtain ⟨p, hp⟩ := exists_adj_dist_add_one hconn hw
+      exact ⟨p, fun _ => hp⟩
+  choose q hq using hpar
+  set N := G.neighborFinset x with hN
+  -- `Dn p`: the neighbours of `x` one step closer to `p` than `x` is
+  set Dn : α → Finset α := fun p => N.filter fun y => G.dist y p + 1 = G.dist x p with hDn
+  -- `O`: the vertices at odd distance at least three from `x`
+  set O := univ.filter fun w => ¬ Even (G.dist x w) ∧ ¬ G.Adj x w with hO
+  set E : α → Finset α := fun v => univ.filter fun w => Even (G.dist v w) with hE
+  have hOx : ∀ z ∈ O, z ≠ x := by
+    intro z hz h
+    simp only [hO, mem_filter, mem_univ, true_and] at hz
+    rw [h, SimpleGraph.dist_self] at hz
+    exact hz.1 (by decide)
+  have hOd : ∀ z ∈ O, 3 ≤ G.dist x z ∧ ¬ Even (G.dist x z) := by
+    intro z hz
+    simp only [hO, mem_filter, mem_univ, true_and] at hz
+    refine ⟨?_, hz.1⟩
+    have h0 : G.dist x z ≠ 0 := fun h => hz.1 (by rw [h]; decide)
+    have h1 : G.dist x z ≠ 1 := fun h => hz.2 (SimpleGraph.dist_eq_one_iff_adj.1 h)
+    have h2 : G.dist x z ≠ 2 := fun h => hz.1 (by rw [h]; decide)
+    omega
+  have hqd : ∀ z ∈ O, G.dist x (q z) + 1 = G.dist x z := fun z hz => (hq z (hOx z hz)).2
+  have hqadj : ∀ z ∈ O, G.Adj z (q z) := fun z hz => (hq z (hOx z hz)).1
+  -- `Dn (q z)` is nonempty: a geodesic from `x` to `q z` starts with such a neighbour
+  have hDnne : ∀ z ∈ O, (Dn (q z)).Nonempty := by
+    intro z hz
+    have hqx : x ≠ q z := by
+      intro h
+      have h1 := hqd z hz
+      rw [← h, SimpleGraph.dist_self] at h1
+      have h2 := (hOd z hz).1
+      omega
+    obtain ⟨y, hxy, hy⟩ := exists_adj_dist_add_one hconn hqx
+    refine ⟨y, ?_⟩
+    simp only [hDn, mem_filter, hN, SimpleGraph.mem_neighborFinset]
+    refine ⟨hxy, ?_⟩
+    rw [SimpleGraph.dist_comm (u := y), SimpleGraph.dist_comm (u := x)]
+    exact hy
+  -- a vertex `y ∈ Dn (q z)` is at even distance `dist x z - 1` from `z`
+  have hcov : ∀ z ∈ O, ∀ y ∈ Dn (q z), Even (G.dist y z) := by
+    intro z hz y hy
+    simp only [hDn, mem_filter, hN, SimpleGraph.mem_neighborFinset] at hy
+    obtain ⟨hxy, hyd⟩ := hy
+    have h1 : G.dist y z ≤ G.dist y (q z) + G.dist (q z) z := hconn.dist_triangle
+    have h2 : G.dist (q z) z = 1 := SimpleGraph.dist_eq_one_iff_adj.2 (G.symm (hqadj z hz))
+    have h3 : G.dist x z ≤ G.dist x y + G.dist y z := hconn.dist_triangle
+    have h4 : G.dist x y = 1 := SimpleGraph.dist_eq_one_iff_adj.2 hxy
+    have h5 := hqd z hz
+    have h6 := (hOd z hz).2
+    rw [Nat.even_iff] at h6 ⊢
+    omega
+  -- a minimum transversal `Y` of the sets `Dn (q z)`
+  set T := N.powerset.filter fun Y => ∀ z ∈ O, (Y ∩ Dn (q z)).Nonempty with hT
+  have hNT : N ∈ T := by
+    simp only [hT, mem_filter, mem_powerset]
+    refine ⟨subset_refl _, fun z hz => ?_⟩
+    obtain ⟨y, hy⟩ := hDnne z hz
+    have hyN : y ∈ N := by
+      simp only [hDn, mem_filter] at hy
+      exact hy.1
+    exact ⟨y, mem_inter.2 ⟨hyN, hy⟩⟩
+  obtain ⟨Y, hYT, hYmin⟩ := T.exists_min_image card ⟨N, hNT⟩
+  simp only [hT, mem_filter, mem_powerset] at hYT
+  obtain ⟨hYN, hYcov⟩ := hYT
+  refine ⟨Y.card, ?_⟩
+  -- every `y ∈ Y` has a private `z`: `y` is the only element of `Y` in `Dn (q z)`
+  have hpriv : ∀ y ∈ Y, ∃ z ∈ O, y ∈ Dn (q z) ∧ ∀ y' ∈ Y, y' ≠ y → y' ∉ Dn (q z) := by
+    intro y hy
+    by_contra hcon
+    push Not at hcon
+    have hmem : Y.erase y ∈ T := by
+      simp only [hT, mem_filter, mem_powerset]
+      refine ⟨(erase_subset _ _).trans hYN, fun z hz => ?_⟩
+      obtain ⟨y'', hy''⟩ := hYcov z hz
+      rw [mem_inter] at hy''
+      by_cases hyy : y'' = y
+      · rw [hyy] at hy''
+        obtain ⟨y', hy'Y, hy'ne, hy'Dn⟩ := hcon z hz hy''.2
+        exact ⟨y', mem_inter.2 ⟨mem_erase.2 ⟨hy'ne, hy'Y⟩, hy'Dn⟩⟩
+      · exact ⟨y'', mem_inter.2 ⟨mem_erase.2 ⟨hyy, hy''.1⟩, hy''.2⟩⟩
+    have h1 := hYmin _ hmem
+    rw [card_erase_of_mem hy] at h1
+    have h2 : 0 < Y.card := card_pos.2 ⟨y, hy⟩
+    omega
+  choose! zz hzzO hzzDn hzzpriv using hpriv
+  -- facts about the private parents `q (zz y)`
+  have hpp : ∀ y ∈ Y, G.Adj x y ∧ G.dist y (q (zz y)) + 1 = G.dist x (q (zz y)) ∧
+      Even (G.dist x (q (zz y))) := by
+    intro y hy
+    have h1 := hzzDn y hy
+    simp only [hDn, mem_filter, hN, SimpleGraph.mem_neighborFinset] at h1
+    refine ⟨h1.1, h1.2, ?_⟩
+    have h2 := hqd _ (hzzO y hy)
+    have h3 := (hOd _ (hzzO y hy)).2
+    rw [Nat.even_iff] at h3 ⊢
+    omega
+  have hYadj : ∀ y ∈ Y, G.Adj x y := fun y hy => (hpp y hy).1
+  -- `Y.card + |E y' ∩ O| ≤ distEven y'` for every `y' ∈ Y`
+  have hkey : ∀ y' ∈ Y, Y.card + (E y' ∩ O).card ≤ distEven G y' := by
+    intro y' hy'
+    have hy'x := hYadj y' hy'
+    set f : α → α := fun y => if G.Adj y' y then q (zz y) else y with hf
+    have hfE : ∀ y ∈ Y.erase y', f y ∈ E y' := by
+      intro y hy
+      obtain ⟨hne, hyY⟩ := mem_erase.1 hy
+      obtain ⟨hxy, hyd, hev⟩ := hpp y hyY
+      simp only [hE, mem_filter, mem_univ, true_and, hf]
+      by_cases hadj : G.Adj y' y
+      · rw [if_pos hadj]
+        have h1 : G.dist y' (q (zz y)) ≤ G.dist y' y + G.dist y (q (zz y)) :=
+          hconn.dist_triangle
+        have h2 : G.dist y' y = 1 := SimpleGraph.dist_eq_one_iff_adj.2 hadj
+        have h3 : G.dist x (q (zz y)) ≤ G.dist x y' + G.dist y' (q (zz y)) :=
+          hconn.dist_triangle
+        have h4 : G.dist x y' = 1 := SimpleGraph.dist_eq_one_iff_adj.2 hy'x
+        have h5 : ¬ (G.dist y' (q (zz y)) + 1 = G.dist x (q (zz y))) := by
+          intro h
+          apply hzzpriv y hyY y' hy' (Ne.symm hne)
+          simp only [hDn, mem_filter, hN, SimpleGraph.mem_neighborFinset]
+          exact ⟨hy'x, h⟩
+        rw [Nat.even_iff] at hev ⊢
+        omega
+      · rw [if_neg hadj]
+        have h1 : G.dist y' y ≤ 2 :=
+          SimpleGraph.dist_le (.cons (G.symm hy'x) (.cons hxy .nil))
+        have h2 : 0 < G.dist y' y := hconn.pos_dist_of_ne (Ne.symm hne)
+        have h3 : G.dist y' y ≠ 1 := fun h => hadj (SimpleGraph.dist_eq_one_iff_adj.1 h)
+        have h4 : G.dist y' y = 2 := by omega
+        rw [h4]
+        decide
+    have hfO : ∀ y ∈ Y.erase y', f y ∉ O := by
+      intro y hy hO'
+      obtain ⟨-, hyY⟩ := mem_erase.1 hy
+      obtain ⟨hxy, -, hev⟩ := hpp y hyY
+      simp only [hO, mem_filter, mem_univ, true_and, hf] at hO'
+      by_cases hadj : G.Adj y' y
+      · rw [if_pos hadj] at hO'
+        exact hO'.1 hev
+      · rw [if_neg hadj] at hO'
+        exact hO'.2 hxy
+    have hfne : ∀ y ∈ Y.erase y', f y ≠ y' := by
+      intro y hy hfy
+      obtain ⟨hne, hyY⟩ := mem_erase.1 hy
+      obtain ⟨-, -, hev⟩ := hpp y hyY
+      simp only [hf] at hfy
+      by_cases hadj : G.Adj y' y
+      · rw [if_pos hadj] at hfy
+        rw [hfy, SimpleGraph.dist_eq_one_iff_adj.2 hy'x] at hev
+        exact absurd hev (by decide)
+      · rw [if_neg hadj] at hfy
+        exact hne hfy
+    have hfinj : Set.InjOn f (Y.erase y') := by
+      intro a ha b hb hab
+      obtain ⟨-, haY⟩ := mem_erase.1 (mem_coe.1 ha)
+      obtain ⟨-, hbY⟩ := mem_erase.1 (mem_coe.1 hb)
+      simp only [hf] at hab
+      by_cases hadja : G.Adj y' a <;> by_cases hadjb : G.Adj y' b
+      · rw [if_pos hadja, if_pos hadjb] at hab
+        by_contra hne
+        have h1 := hzzDn b hbY
+        rw [← hab] at h1
+        exact hzzpriv a haY b hbY (Ne.symm hne) h1
+      · rw [if_pos hadja, if_neg hadjb] at hab
+        have hev := (hpp a haY).2.2
+        rw [hab, SimpleGraph.dist_eq_one_iff_adj.2 (hYadj b hbY)] at hev
+        exact absurd hev (by decide)
+      · rw [if_neg hadja, if_pos hadjb] at hab
+        have hev := (hpp b hbY).2.2
+        rw [← hab, SimpleGraph.dist_eq_one_iff_adj.2 (hYadj a haY)] at hev
+        exact absurd hev (by decide)
+      · rw [if_neg hadja, if_neg hadjb] at hab
+        exact hab
+    have hy'O : y' ∉ O := by
+      intro h
+      simp only [hO, mem_filter, mem_univ, true_and] at h
+      exact h.2 hy'x
+    have hdisj : Disjoint ((Y.erase y').image f) (E y' ∩ O) := by
+      rw [disjoint_left]
+      intro w hw hw'
+      obtain ⟨y, hy, rfl⟩ := mem_image.1 hw
+      exact hfO y hy (mem_inter.1 hw').2
+    have hnotin : y' ∉ (Y.erase y').image f ∪ (E y' ∩ O) := by
+      rw [mem_union, not_or]
+      refine ⟨fun h => ?_, fun h => hy'O (mem_inter.1 h).2⟩
+      obtain ⟨y, hy, hfy⟩ := mem_image.1 h
+      exact hfne y hy hfy
+    have hsub : insert y' ((Y.erase y').image f ∪ (E y' ∩ O)) ⊆ E y' := by
+      intro w hw
+      rw [mem_insert, mem_union] at hw
+      rcases hw with rfl | hw | hw
+      · simp only [hE, mem_filter, mem_univ, true_and, SimpleGraph.dist_self]
+        decide
+      · obtain ⟨y, hy, rfl⟩ := mem_image.1 hw
+        exact hfE y hy
+      · exact (mem_inter.1 hw).1
+    have h1 := card_le_card hsub
+    rw [card_insert_of_notMem hnotin, card_union_of_disjoint hdisj,
+      card_image_of_injOn hfinj, card_erase_of_mem hy'] at h1
+    have h2 : 0 < Y.card := card_pos.2 ⟨y', hy'⟩
+    have h3 : (E y').card = distEven G y' := rfl
+    omega
+  -- `O` is covered by the sets `E y ∩ O`, `y ∈ Y`
+  have hOsub : O ⊆ Y.biUnion fun y => E y ∩ O := by
+    intro z hz
+    obtain ⟨y, hy⟩ := hYcov z hz
+    rw [mem_inter] at hy
+    rw [mem_biUnion]
+    refine ⟨y, hy.1, mem_inter.2 ⟨?_, hz⟩⟩
+    simp only [hE, mem_filter, mem_univ, true_and]
+    exact hcov z hz y hy.2
+  have hOcard : O.card + Y.card * Y.card ≤ Y.card * (σ + 1) := by
+    have h1 := (card_le_card hOsub).trans card_biUnion_le
+    have h2 : ∑ y ∈ Y, (Y.card + (E y ∩ O).card) ≤ ∑ _y ∈ Y, (σ + 1) :=
+      sum_le_sum fun y hy => (hkey y hy).trans (hDle y)
+    rw [sum_add_distrib, sum_const, sum_const, smul_eq_mul, smul_eq_mul] at h2
+    omega
+  -- `V = E x ∪ N(x) ∪ O`
+  have hcover : (univ : Finset α) ⊆ E x ∪ N ∪ O := by
+    intro w _
+    by_cases he : Even (G.dist x w)
+    · exact mem_union_left _ (mem_union_left _ (mem_filter.2 ⟨mem_univ _, he⟩))
+    · by_cases ha : G.Adj x w
+      · exact mem_union_left _ (mem_union_right _ ((G.mem_neighborFinset x w).2 ha))
+      · exact mem_union_right _ (mem_filter.2 ⟨mem_univ _, he, ha⟩)
+  have hn := card_le_card hcover
+  rw [card_univ] at hn
+  have hu := (card_union_le _ _).trans (Nat.add_le_add_right (card_union_le (E x) N) O.card)
+  have hEx : (E x).card = distEven G x := rfl
+  have hNc : N.card = G.degree x := G.card_neighborFinset_eq_degree x
+  omega
+
+/-- **Order bound from any vertex.**  Under the hypothesis of Conjecture 189, every vertex `x`
+of a connected graph satisfies `4n ≤ 4 (σ(G) + 1) + 4 deg x + (σ(G) + 1)²`, because
+`4 s (σ + 1) ≤ (σ + 1)² + 4 s²`. -/
+theorem four_mul_card_le [Nontrivial α] (G : SimpleGraph α) [DecidableRel G.Adj]
+    (hconn : G.Connected)
+    (hσ : (Finset.univ.image (distEven G)).max' (by simp) ≤ 1 + secondSmallestDegree G)
+    (x : α) :
+    4 * Fintype.card α ≤
+      4 * (secondSmallestDegree G + 1) + 4 * G.degree x + (secondSmallestDegree G + 1) ^ 2 := by
+  obtain ⟨s, hs⟩ := exists_card_add_mul_self_le G hconn hσ x
+  have hde : distEven G x ≤ secondSmallestDegree G + 1 :=
+    (le_max' _ _ (mem_image_of_mem _ (mem_univ x))).trans (by omega)
+  have hsq : 4 * (s * (secondSmallestDegree G + 1)) ≤
+      (secondSmallestDegree G + 1) ^ 2 + 4 * (s * s) := by
+    zify
+    nlinarith [sq_nonneg ((secondSmallestDegree G : ℤ) + 1 - 2 * s)]
+  omega
+
+/-- **Order bound.**  Under the hypothesis of Conjecture 189 a connected graph has
+`4n ≤ 4 (2σ(G) + 1) + (σ(G) + 1)²`, that is `n ≤ 2σ + 1 + ⌊(σ + 1)² / 4⌋`: apply
+`four_mul_card_le` to a vertex of degree `σ(G)`.  This gives `n ≤ 11` for `σ(G) = 3` and
+`n ≤ 15` for `σ(G) = 4`. -/
+theorem four_mul_card_le_sq [Nontrivial α] (G : SimpleGraph α) [DecidableRel G.Adj]
+    (hconn : G.Connected)
+    (hσ : (Finset.univ.image (distEven G)).max' (by simp) ≤ 1 + secondSmallestDegree G) :
+    4 * Fintype.card α ≤
+      4 * (2 * secondSmallestDegree G + 1) + (secondSmallestDegree G + 1) ^ 2 := by
+  obtain ⟨x, hx⟩ := exists_degree_eq_secondSmallestDegree G
+  have h := four_mul_card_le G hconn hσ x
+  rw [hx] at h
+  omega
+
+/-- **Search reduction for `σ(G) ≤ 4`.**  A connected graph satisfying the hypothesis of
+Conjecture 189 with `σ(G) ≤ 4` has at most `15` vertices, minimum degree at least `n - 11`, at
+most four vertices at distance two from any vertex, and at least two vertices of degree at most
+four.  These are the facts the computer search for the case `σ(G) ≤ 4` relies on. -/
+theorem search_reduction_four [Nontrivial α] (G : SimpleGraph α) [DecidableRel G.Adj]
+    (hconn : G.Connected)
+    (hσ : (Finset.univ.image (distEven G)).max' (by simp) ≤ 1 + secondSmallestDegree G)
+    (h4 : secondSmallestDegree G ≤ 4) :
+    Fintype.card α ≤ 15 ∧ (∀ x, Fintype.card α ≤ G.degree x + 11) ∧
+      (∀ v, (Finset.univ.filter fun w => G.dist v w = 2).card ≤ 4) ∧
+      2 ≤ (Finset.univ.filter fun w => G.degree w ≤ 4).card := by
+  have hsq : (secondSmallestDegree G + 1) ^ 2 ≤ 5 ^ 2 := Nat.pow_le_pow_left (by omega) 2
+  refine ⟨?_, fun x => ?_, fun v => (card_dist_eq_two_le G hσ v).trans h4, ?_⟩
+  · have h := four_mul_card_le_sq G hconn hσ
+    omega
+  · have h := four_mul_card_le G hconn hσ x
     omega
   · exact (two_le_card_degree_le G).trans
       (card_le_card fun w hw => by

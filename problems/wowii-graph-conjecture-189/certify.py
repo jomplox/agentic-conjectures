@@ -1,26 +1,30 @@
 #!/usr/bin/env python3
-"""Hamiltonian-path certificates for WOWII Conjecture 189 when sigma(G) <= 3.
+"""Hamiltonian-path certificates for WOWII Conjecture 189 when sigma(G) <= 4.
 
-The certificate file lists, for every order n = 2..16, each connected graph G on n vertices
+A certificate file lists, for every order n in its range, each connected graph G on n vertices
 (up to isomorphism, one graph6 string per class) with
 
-    max_v distEven(v) <= 1 + sigma(G)   and   sigma(G) <= 3,
+    max_v distEven(v) <= 1 + sigma(G)
 
-together with a Hamiltonian path of G.  distEven(v) counts the vertices at even distance from
-v, v included; sigma(G) is the second entry of the nondecreasing degree sequence.  Lines are
+in its class, together with a Hamiltonian path of G.  sigma3_certificates.txt covers
+sigma(G) <= 3 and n = 2..16; sigma4_certificates.txt (option --sigma4) covers sigma(G) = 4 and
+n = 2..15.  distEven(v) counts the vertices at even distance from v, v included; sigma(G) is the
+second entry of the nondecreasing degree sequence.  Lines are
 
     # n=<n> count=<c>                       one header per order, before its graphs
     <graph6> <v_0>,<v_1>,...,<v_{n-1}>      vertices numbered as in the graph6 string
 
 Default mode re-verifies a certificate file from the graph6 strings alone: every graph is
-connected, satisfies the hypothesis with sigma(G) <= 3, and the vertex list is a Hamiltonian
+connected, satisfies the hypothesis, lies in the class, and the vertex list is a Hamiltonian
 path; the graph6 strings are distinct; each order has its announced number of graphs, and the
-counts agree with EXPECTED below.  It does not (and cannot) show that the list is complete;
-completeness rests on the pruned geng search in reproduce.sh.
+counts agree with EXPECTED (EXPECTED4 for --sigma4) below.  It does not (and cannot) show that
+the list is complete; completeness rests on the pruned geng searches in reproduce.sh.
 
-`--make` reads graph6 lines on stdin, keeps the hypothesis graphs with sigma(G) <= 3, finds a
+`--make` reads graph6 lines on stdin, keeps the hypothesis graphs in the class, finds a
 Hamiltonian path for each and prints certificate lines (without headers).  It exits with
 status 1 if some kept graph has no Hamiltonian path, which would be a counterexample.
+
+usage: certify.py [--sigma4] FILE  |  certify.py [--sigma4] --make
 
 Standard library only.
 """
@@ -30,6 +34,13 @@ from collections import deque
 # number of hypothesis graphs with sigma(G) <= 3, up to isomorphism, for n = 2..16
 EXPECTED = {2: 1, 3: 2, 4: 5, 5: 14, 6: 42, 7: 168, 8: 293, 9: 100, 10: 29,
             11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0}
+# number of hypothesis graphs with sigma(G) = 4, up to isomorphism, for n = 2..15
+EXPECTED4 = {2: 0, 3: 0, 4: 0, 5: 1, 6: 8, 7: 67, 8: 1018, 9: 17012, 10: 33433,
+             11: 7186, 12: 2044, 13: 285, 14: 0, 15: 0}
+
+
+def in_class(sigma, four):
+    return sigma == 4 if four else sigma <= 3
 
 
 def parse_graph6(s):
@@ -110,7 +121,7 @@ def find_ham_path(adj):
     return None
 
 
-def make():
+def make(four):
     bad = 0
     for line in sys.stdin:
         g6 = line.strip()
@@ -118,7 +129,7 @@ def make():
             continue
         adj = parse_graph6(g6)
         conn, sigma, max_even = invariants(adj)
-        if not conn or sigma > 3 or max_even > 1 + sigma:
+        if not conn or not in_class(sigma, four) or max_even > 1 + sigma:
             continue
         path = find_ham_path(adj)
         if path is None:
@@ -129,7 +140,9 @@ def make():
     return 1 if bad else 0
 
 
-def verify(filename):
+def verify(filename, four):
+    expected = EXPECTED4 if four else EXPECTED
+    label = "sigma = 4" if four else "sigma <= 3"
     counts, announced, seen = {}, {}, set()
     current = None
     with open(filename) as f:
@@ -152,30 +165,34 @@ def verify(filename):
             conn, sigma, max_even = invariants(adj)
             if current is None or len(adj) != current:
                 raise SystemExit(f"line {lineno}: graph order does not match its header")
-            if not conn or sigma > 3 or max_even > 1 + sigma:
-                raise SystemExit(f"line {lineno}: {g6} is not a hypothesis graph with sigma <= 3")
+            if not conn or not in_class(sigma, four) or max_even > 1 + sigma:
+                raise SystemExit(f"line {lineno}: {g6} is not a hypothesis graph with {label}")
             if not is_ham_path(adj, path):
                 raise SystemExit(f"line {lineno}: invalid Hamiltonian path for {g6}")
             if g6 in seen:
                 raise SystemExit(f"line {lineno}: duplicate graph {g6}")
             seen.add(g6)
             counts[current] += 1
-    if sorted(announced) != sorted(EXPECTED):
-        raise SystemExit(f"headers cover n={sorted(announced)}, expected {sorted(EXPECTED)}")
-    for n in sorted(EXPECTED):
-        if counts[n] != announced[n] or counts[n] != EXPECTED[n]:
+    if sorted(announced) != sorted(expected):
+        raise SystemExit(f"headers cover n={sorted(announced)}, expected {sorted(expected)}")
+    for n in sorted(expected):
+        if counts[n] != announced[n] or counts[n] != expected[n]:
             raise SystemExit(f"n={n}: {counts[n]} graphs, header {announced[n]}, "
-                             f"expected {EXPECTED[n]}")
+                             f"expected {expected[n]}")
     total = sum(counts.values())
-    print(f"OK: {total} hypothesis graphs with sigma <= 3 on 2..16 vertices, "
-          f"each with a verified Hamiltonian path; per order: "
+    print(f"OK: {total} hypothesis graphs with {label} on {min(expected)}..{max(expected)} "
+          f"vertices, each with a verified Hamiltonian path; per order: "
           + " ".join(f"{n}:{counts[n]}" for n in sorted(counts)))
     return 0
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 2 and sys.argv[1] == "--make":
-        sys.exit(make())
-    if len(sys.argv) == 2:
-        sys.exit(verify(sys.argv[1]))
+    args = sys.argv[1:]
+    four = args[:1] == ["--sigma4"]
+    if four:
+        args = args[1:]
+    if args == ["--make"]:
+        sys.exit(make(four))
+    if len(args) == 1:
+        sys.exit(verify(args[0], four))
     sys.exit(__doc__)
